@@ -6,6 +6,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
 import java.util.Vector;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Types;
 
 public class DB_과일가게_예약 extends JFrame {
 
@@ -99,54 +104,60 @@ public class DB_과일가게_예약 extends JFrame {
       contentPane.add(textField_4);
       textField_4.setColumns(10);
    
+    
+      
       JButton btnNewButton = new JButton("예약");
       btnNewButton.setBounds(780, 72, 91, 23);
       contentPane.add(btnNewButton);
-      
+
       btnNewButton.addActionListener(new ActionListener() {
-           public void actionPerformed(ActionEvent e) {
-               String 예약번호 = textField.getText();
-               String 손님번호 = textField_1.getText();
-               String 주문과일종류 = textField_2.getText();
-               String 주문수량 = textField_3.getText();
-               String 주문날짜 = textField_4.getText();
+          public void actionPerformed(ActionEvent e) {
+              String 예약번호 = textField.getText();
+              String 손님번호 = textField_1.getText();
+              String 주문과일종류 = textField_2.getText();
+              String 주문수량 = textField_3.getText();
+              String 주문날짜 = textField_4.getText();
 
-               if (예약번호.isEmpty() || 손님번호.isEmpty() || 주문과일종류.isEmpty() || 주문수량.isEmpty() || 주문날짜.isEmpty()) {
-                   JOptionPane.showMessageDialog(contentPane, "입력해주세요", "알림", JOptionPane.WARNING_MESSAGE);
-               } else {
-                   try {
-                       // SP_수량관리 프로시저 호출
-                       Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:XE", "fruit", "1234");
+              if (예약번호==null || 손님번호.isEmpty() || 주문과일종류.isEmpty() || 주문수량.isEmpty() || 주문날짜.isEmpty()) {
+                  JOptionPane.showMessageDialog(contentPane, "입력해주세요", "알림", JOptionPane.WARNING_MESSAGE);
+              } else {
+                  try {
+                      // 데이터베이스 연결 정보
+                      String jdbcUrl = "jdbc:oracle:thin:@localhost:1521:XE";
+                      String username = "fruit";
+                      String password = "1234";
 
-                       // 호출 문자열 수정
-                       CallableStatement cstmt = conn.prepareCall("{call SP_수량관리(?, ?, ?)}");
+                      // 데이터베이스 연결
+                      Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
 
-                       // 입력 매개변수 설정
-                       cstmt.setInt(1, Integer.parseInt(주문수량));
-                       cstmt.setString(2, 주문과일종류);
+                      // SP_주문처리 프로시저 호출
+                      CallableStatement callableStatement = connection.prepareCall("{call SP_주문처리(?, ?, ?)}");
 
-                       // 출력 매개변수 설정
-                       cstmt.registerOutParameter(3, Types.VARCHAR); // P_RESULT를 반환 값으로 설정
+                      // 입력 매개변수 설정
+                      callableStatement.setInt(1, Integer.parseInt(주문수량)); 
+                      callableStatement.setString(2, 주문과일종류);
+                      callableStatement.registerOutParameter(3, Types.VARCHAR);
 
-                       // 프로시저 실행
-                       cstmt.execute();
+                      // 프로시저 실행
+                      callableStatement.execute();
 
-                       // 결과 메시지 확인
-                       String 결과메시지 = cstmt.getString(3);
-                       JOptionPane.showMessageDialog(contentPane, 결과메시지, "결과", JOptionPane.INFORMATION_MESSAGE);
+                      // 결과 메시지 확인
+                      String 결과메시지 = callableStatement.getString(3);
+                      JOptionPane.showMessageDialog(contentPane, 결과메시지, "결과", JOptionPane.INFORMATION_MESSAGE);
 
-                       // 테이블 모델에 데이터 추가
-                       DefaultTableModel model = (DefaultTableModel) table_1.getModel();
-                       model.addRow(new Object[]{예약번호, 손님번호, 주문과일종류, 주문수량, 주문날짜});
+                      // 테이블 모델에 데이터 추가
+                      DefaultTableModel model = (DefaultTableModel) table_1.getModel();
+                      model.addRow(new Object[]{예약번호, 손님번호, 주문과일종류, 주문수량, 주문날짜});
 
-                       cstmt.close();
-                       conn.close();
-                   } catch (SQLException ex) {
-                       ex.printStackTrace();
-                   }
-               }
-           }
-       });
+                      callableStatement.close();
+                      connection.close();
+                  } catch (SQLException ex) {
+                      ex.printStackTrace();
+                      JOptionPane.showMessageDialog(contentPane, "데이터베이스 오류", "에러", JOptionPane.ERROR_MESSAGE);
+                  }
+              }
+          }
+      });
 
 
       
